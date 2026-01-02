@@ -66,5 +66,18 @@ docker-rebuild:
 	docker compose build --no-cache
 	docker compose up -d
 
+docker-health:
+	docker compose up -d --build
+	@echo "Waiting for container health..."
+	@for i in 1 2 3 4 5 6 7 8 9 10 11 12; do \
+	  status=$$(docker inspect --format='{{.State.Health.Status}}' $$(docker compose ps -q api) 2>/dev/null || echo "unknown"); \
+	  echo "health=$$status"; \
+	  if [ "$$status" = "healthy" ]; then exit 0; fi; \
+	  sleep 2; \
+	done; \
+	echo "Container did not become healthy"; \
+	docker compose logs --tail 50 api; \
+	exit 1
+
 api:
 	$(UVICORN) portfolio_api.app:app --host 0.0.0.0 --port 8000 --reload
